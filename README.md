@@ -1,2 +1,5 @@
 # BiPoS1
-This is the first version of the Binary Population Synthesizer (BiPoS1)
+This is the first version of the Binary Population Synthesizer (BiPoS1). It allows to efficiently calculate binary distribution functions after the dynamical processing of a realistic population of binary stars during the first few Myr in the hosting embedded star cluster. It is particularly useful for generating a realistic birth binary population as an input for N-body simulations of globular clusters. Instead of time-consuming N-body simulations, BiPoS1 uses the stellar dynamical operator, which determines the fraction of surviving binaries depending on the binding energy of the binaries. The stellar dynamical operator depends on the initial star cluster density, as well as the time until the residual gas of the star cluster is expelled.  At the time of gas expulsion, the dynamical processing of the binary population is assumed to effectively end due to the expansion of the star cluster related to that event. BiPoS1 has also a galactic-field mode, in order to synthesize the stellar population of a whole galaxy.
+
+# Setup and use
+
