@@ -3,3 +3,13 @@ This is the first version of the Binary Population Synthesizer (BiPoS1). It allo
 
 # Setup and use
 
+This a short version of how to setup and use BiPoS1; for a more detailed version see the paper by Dabringhausen, Marks and Kroupa (2021, coming soon)
+
+The program is compiled by typing "make BiPoS" into the command line of a terminal at the directory where the user has stored the program. BiPoS1 should start  afterwards, if "./BiPoS" is typed into the command line.
+
+The user is then directed to the help menu. It contains four items, which explain the syntax to be used in BiPoS1. These items are:
+
+- ./BiPoS genlib help: The user can create a library of binary systems, which is used in later calls of BiPoS1. First-time users have to generate a library of binaries first!
+-  ./BiPoS clust help: The user can synthezise a population of binaries which reside in a single star cluster.
+-  ./BiPoS field help: The user can synthesize a galaxy-wide field population.
+-  ./BiPoS SpT help: This command shows the default mass ranges for spectral types and a way to change them.
