@@ -5,7 +5,7 @@ This is the first version of the Binary Population Synthesizer (BiPoS1). It allo
 
 This a short version of how to setup and use BiPoS1; for a more detailed version see the paper by Dabringhausen, Marks and Kroupa (2021, coming soon)
 
-The program is compiled by typing "make BiPoS" into the command line of a terminal at the directory where the user has stored the program. BiPoS1 should start  afterwards, if "./BiPoS" is typed into the command line.
+BiPoS1 is programmed in C. It is compiled by typing "make BiPoS" into the command line of a terminal at the directory where the user has stored the program. BiPoS1 should start  afterwards, if "./BiPoS" is typed into the command line.
 
 The user is then directed to the help menu. It contains four items, which explain the syntax to be used in BiPoS1. These items are:
 
@@ -13,3 +13,7 @@ The user is then directed to the help menu. It contains four items, which explai
 -  ./BiPoS clust help: The user can synthezise a population of binaries which reside in a single star cluster.
 -  ./BiPoS field help: The user can synthesize a galaxy-wide field population.
 -  ./BiPoS SpT help: This command shows the default mass ranges for spectral types and a way to change them.
+
+Proficient users may skip the help menu, and type in directly the syntax for the binary population they want BiPoS1 to sythesize. Consider for instance "./BiPoS clust mecl=500 rh=0.5 t=1 SpT=M". It creates the surviving binary population of M-stars after 1 Myr in a star cluster with an embedded mass of 500 solar masses and a half-mass radius of 0.5 pc. There are more examples like this in the help menu, besides a more thorough guide how to use BiPoS1.
+
+Have fun!
