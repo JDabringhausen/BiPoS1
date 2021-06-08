@@ -14,6 +14,6 @@ After typing ./BiPoS, the user is directed to the help menu. It contains four it
 -  ./BiPoS field help: The user can synthesize a galaxy-wide field population.
 -  ./BiPoS SpT help: This command shows the default mass ranges for spectral types and a way to change them.
 
-Proficient users may skip the help menu, and type in directly the syntax for the binary population they want BiPoS1 to sythesize. Consider for instance "./BiPoS clust mecl=500 rh=0.5 t=1 SpT=M". It creates the surviving binary population of M-stars after 1 Myr in a star cluster with an embedded mass of 500 solar masses and a half-mass radius of 0.5 pc. There are more examples like this in the help menu, besides a more thorough guide how to use BiPoS1.
+Proficient users may skip the help menu, and type in directly the syntax for the binary population they want BiPoS1 to sythesize. An example for a working command would be for instance "./BiPoS clust mecl=500 rh=0.5 t=1 SpT=M". It creates the surviving binary population of M-stars after 1 Myr in a star cluster with an embedded mass of 500 solar masses and a half-mass radius of 0.5 pc. There are more examples like this in the help menu, besides a more thorough guide how to use BiPoS1.
 
 Have fun!
