@@ -7,7 +7,7 @@ This is a short version of how to setup and use BiPoS1; for a more detailed vers
 
 BiPoS1 is programmed in C. It is compiled by typing "make BiPoS" into the command line of a terminal at the directory where the user has stored the program. BiPoS1 should start afterwards, if "./BiPoS" is typed into the command line.
 
-After typing ./BiPoS, the user is directed to the help menu. It contains four items, which explain the syntax to be used in BiPoS1. These are:
+After typing ./BiPoS, the user is directed to the help menu. The user can choose here one of four commands, which explain the syntax used in BiPoS1 further. These are:
 
 - ./BiPoS genlib help: Instructions for how to create a library of binary systems, which is used in later calls of BiPoS1. First-time users have to generate a library of binaries first!
 - ./BiPoS clust help: Instructions for how to synthezise a population of binaries in a single star cluster.
