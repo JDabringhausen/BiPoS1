@@ -5,7 +5,7 @@ This is the first version of the Binary Population Synthesizer (BiPoS1). It allo
 
 This is a short version of how to setup and use BiPoS1; for a more detailed version see the paper by Dabringhausen, Marks and Kroupa (2021, coming soon...)
 
-BiPoS1 is programmed in C. It is compiled by typing "make BiPoS" into the command line of a terminal at the directory where the user has stored the program. BiPoS1 should start afterwards, if "./BiPoS" is typed into the command line.
+When extracting the program files of BiPoS1 to a computer, the user should take care that the file structure is preserved: The folders "Lib" and "output" are essential for the storage of the output data of BiPoS1. BiPoS1 is compiled by typing "make BiPoS" into the command line of a terminal at the directory where the user has stored the program. BiPoS1 should start afterwards, if "./BiPoS" is typed into the command line.
 
 After typing ./BiPoS, the user is directed to the help menu. The user can choose here one of four commands, which explain the syntax used in BiPoS1 further. These are:
 
