@@ -168,15 +168,14 @@ bool orbital_parameter_distributions(char *libname,double lib_entries,double *nr
 
      fE_in contains the number of binaries per bin for the number of binaries in the library for the initial distribution;
 
-     nrgspect_fin and nrgspect_in contain the *calculated* final and initial numbers of binaries per bin based on cluster masses; has nothing to do with the size of the library,
-     therefore these numbers need to be scaled according to the library size.
+     nrgspect_fin and nrgspect_in contain the *calculated* final and initial numbers of binaries per bin based on embedded cluster masses; has nothing to do with the size of the library, therefore these numbers need to be scaled according to the library size.
 
-     it may occur that nrgspect_fin / nrgspect_in > 1, i.e. more binaries one bin of the final than of initial distribution, meaning there are hardened binaries!
+     it may occur that nrgspect_fin / nrgspect_in > 1, i.e. more binaries in one bin of the final than of initial distribution, meaning there are hardened binaries!
 
      LIB_SCALE_FACTOR < 1 ensures there will be sufficient hard binaries from the library that fall into the high energy bin if hardened binaries occur.
   */
 
-  lib_size = 0.0; /* stores the scales size of the library */
+  lib_size = 0.0; /* stores the scaled size of the library */
   for(i=0;i<SMPLPNTS_lE;i++) {
 
     lib_size += fE_in[i]*LIB_SCALE_FACTOR;
@@ -189,8 +188,8 @@ bool orbital_parameter_distributions(char *libname,double lib_entries,double *nr
 
       if(init)
 	nrgspect_fin[2*i+1] = fE_in[i] * LIB_SCALE_FACTOR;
-      else
-	nrgspect_fin[2*i+1] = 0.;
+      //else
+	//nrgspect_fin[2*i+1] = 0.;
 
     }
 
@@ -278,7 +277,7 @@ bool orbital_parameter_distributions(char *libname,double lib_entries,double *nr
 
 	  /* lib_size < number of binaries in library since multiplied by LIB_SCALE_FACTOR */
 	  /* if row in library > scaled lib_size it means that there is a binary in the library although all should already have been distributed > it has to be a hardened binary */
-	  if(row < lib_size) { /* standard binary > add 1 binary */
+	  //if(row < lib_size) { /* standard binary > add 1 binary */
 
 	    if(SpT[8] && m1 >= mmin && m1 <= mmax) {
 	      /* add one system and one binary to the user-defined population */
@@ -292,29 +291,26 @@ bool orbital_parameter_distributions(char *libname,double lib_entries,double *nr
 	    num_sys_ST[ST]++;
 	    num_bin_ST[ST]++;
 
-	    j = 0;
-	    while(j<32) {
-	      if( log10(m1) > ((-1.0+j*0.1)-0.1) && log10(m1) < ((-1.0+j*0.1)+0.1) )
-		break;
-	      j++;
-	    }
-
 	    if(fin && slidebinfrac) {
-
-	      num_sys_moving[j]++;
-	      num_bin_moving[j]++;
-
+		j = 0;
+		while(j<32) {
+		    if( log10(m1) > ((-1.0+j*0.1)-0.1) && log10(m1) < ((-1.0+j*0.1)+0.1) )
+			break;
+		    j++;
+		}
+		num_sys_moving[j]++;
+		num_bin_moving[j]++;
 	    }
 
-	  } else { /* hardened binary */
+	  /* } else { // hardened binary
 
-	    /* one single star with SpT of the primary is now a binary > add a binary */
+	    // one single star with SpT of the primary is now a binary > add a binary
 	    num_bin_ST[7]++;
 	    num_bin_ST[ST]++;
-	    /* two stars become one binary > subtract 1 system and 1 single star; number of systems with SpT of the primary remains the same */
+	    // two stars become one binary > subtract 1 system and 1 single star; number of systems with SpT of the primary remains the same
 	    num_sys_ST[7]--;
 	    num_sing_ST[7]--;
-	    /* one single star with SpT becomes secondary of the new binary; one system and one single star with SpT disappear */
+	    // one single star with SpT becomes secondary of the new binary; one system and one single star with SpT disappear
 	    ST=check_spectral_type(m2);
 	    num_sys_ST[ST]--;
 	    num_sing_ST[ST]--;
@@ -327,19 +323,19 @@ bool orbital_parameter_distributions(char *libname,double lib_entries,double *nr
 	      num_sing_ST[8]--;
 	    }
 
-	  }
+	  } */
 
 	} else { /* if no binary left in final spectrum > binary > 2 single stars */
 
 	  if(row < lib_size) { 
 
 	    if(SpT[8] && m1 >= mmin && m1 <= mmax) {
-	      /* add one system and one single to the user-defined population */
+	      /* add one system and one single star to the user-defined population */
 	      num_sys_ST[8]++;
 	      num_sing_ST[8]++;
 	    }
 	    if(SpT[8] && m2 >= mmin && m2 <= mmax) {
-	      /* add one system and one single to the user-defined population */
+	      /* add one system and one single star to the user-defined population */
 	      num_sys_ST[8]++;
 	      num_sing_ST[8]++;
 	    }
@@ -348,13 +344,15 @@ bool orbital_parameter_distributions(char *libname,double lib_entries,double *nr
 	    num_sys_ST[7]+=2.0;
 	    num_sing_ST[7]+=2.0;
 
-	    j = 0;
-	    while(j<32) {
-	      if( log10(m1) > ((-1.0+j*0.1)-0.1) && log10(m1) < ((-1.0+j*0.1)+0.1) )
-		break;
-	      j++;
+	    if(fin && slidebinfrac) {
+		j = 0;
+		while(j<32) {
+		    if( log10(m1) > ((-1.0+j*0.1)-0.1) && log10(m1) < ((-1.0+j*0.1)+0.1) )
+			break;
+		    j++;
+		}
+		num_sys_moving[j]++;
 	    }
-	    if(fin && slidebinfrac) num_sys_moving[j]++;
 
 	    /* add one single star to SpT dependent spectrum */
 	    /* for primary and secondary component each */
@@ -366,13 +364,15 @@ bool orbital_parameter_distributions(char *libname,double lib_entries,double *nr
 	    num_sys_ST[ST]++;
 	    num_sing_ST[ST]++;
 
-	    j = 0;
-	    while(j<32) {
-	      if( log10(m2) > ((-1.0+j*0.1)-0.1) && log10(m2) < ((-1.0+j*0.1)+0.1) )
-		break;
-	      j++;
+	    if(fin && slidebinfrac) {
+		j = 0;
+		while(j<32) {
+		    if( log10(m2) > ((-1.0+j*0.1)-0.1) && log10(m2) < ((-1.0+j*0.1)+0.1) )
+			break;
+		    j++;
+		}
+		num_sys_moving[j]++;
 	    }
-	    if(fin && slidebinfrac) num_sys_moving[j]++;
 
 	  }
 
@@ -384,7 +384,7 @@ bool orbital_parameter_distributions(char *libname,double lib_entries,double *nr
 
     }
 
-    /* if(output of ODPs requested) */
+    /* if(output of OPDs requested) */
     if(init || fin) {
 
       /* if(is a binary - not ionized) -> put binary into BDFs*/

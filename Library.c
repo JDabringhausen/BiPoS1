@@ -59,7 +59,7 @@ void Library(FILE *dat,long int Nlib,double mmin,double mmax,bool eigen,bool ord
 
   fprintf(dat,"#m1\tm2\te\ta\t\tlP\tlE\tlL\ts\tt/T\tphase");
 
-  /* erzeuge ein Massen-array */
+  /* create a mass-array */
   for(i=0;i<2*Nlib;i++) {
 
     do {
@@ -74,7 +74,7 @@ void Library(FILE *dat,long int Nlib,double mmin,double mmax,bool eigen,bool ord
 
   for(i=0;i<2*Nlib-1;i++) {
 
-    if(i==2*Nlib-2) fprintf(stderr,"%li...",i);fflush(stderr);
+    if(i==2*Nlib-2) { fprintf(stderr,"%li...",i);fflush(stderr); }
 
     mstar1=0.;
     mstar2=0.;
@@ -85,7 +85,7 @@ void Library(FILE *dat,long int Nlib,double mmin,double mmax,bool eigen,bool ord
       if(marray[i+j]!=0) {
 
 	mstar1=marray[i+j];
-	marray[i+j]=0.0; /* setze Eintrag auf Null, wenn vergeben */
+	marray[i+j]=0.0; /* zero entry, if paired */
 
       } else {
 
@@ -95,7 +95,7 @@ void Library(FILE *dat,long int Nlib,double mmin,double mmax,bool eigen,bool ord
 
     } while(mstar1==0.);
 
-    i += j; /* <- eintrag in marray von mstar1, davor sind nur Nullen! */
+    i += j; /* <- entry in marry of mstar1, only zeroes before that! */
     j = 1;
 
     do {

@@ -10,6 +10,7 @@
 
 #define STD_TARGETS 100
 #define STD_MECL 1000.0
+#define STD_RHO 0.0
 #define STD_TIME 3
 
 #define STD_INIT false

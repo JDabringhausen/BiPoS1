@@ -16,7 +16,7 @@ bool extract_constraints(char argv[],double *bin_min,double *bin_max,int *smplpn
 bool check_user_input(int argc,char *argv[],char *libname,long int *Nlib,double *mmin,double*mmax,int *num_sys_obs,bool *eigen,bool *ordered,double *rho,double *mecl,double *t,double *beta,double *sfr,double *meclmin,double *rh,bool *lib,bool *use_mk12,bool *field,bool *clust,bool *slidebinfrac,bool *init,bool *fin,bool *SpT,bool *bdf,bool *constrain,double *bin_min,double *bin_max,int *smplpnts,double *binwidth) {
 
   unsigned int i,j;
-  double s,k_ML,meclmax;
+  double s,k_ML,meclmax,m,r;
   bool help=false,spt=false,error=false;
   char *spectral_names[9]={"M","K","G","F","A","B","O","integrated","user"},*bdf_names[10]={"eccentricity","mass-ratio","semi-major-axis","period","energy","reduced mass","angular momentum","apparent separation","orbital-time","phase"};
   char string[100];
@@ -42,6 +42,7 @@ bool check_user_input(int argc,char *argv[],char *libname,long int *Nlib,double 
     if(strncmp(argv[i],"+fbspt",6)==0) *slidebinfrac=true;
 
     if(strncmp(argv[i],"mecl=",5)==0) *mecl=atof(argv[i]+5);
+    if(strncmp(argv[i],"rho=",4)==0) *rho=atof(argv[i]+4);
     if(strncmp(argv[i],"-evolve",7)==0) *fin=false;
     if(strncmp(argv[i],"t=",2)==0) *t=atof(argv[i]+2);
 
@@ -273,45 +274,74 @@ bool check_user_input(int argc,char *argv[],char *libname,long int *Nlib,double 
       return(true);
     }
 
+    if( *rho != STD_RHO && (*mecl != STD_MECL || *rh != STD_RH) ) {
+      fprintf(stderr,"ERROR: Set either rho=... or a combination of mecl=... and rh=..., from which rho is calculated, but not both simultaneously.\n");
+      fflush(stderr);
+      return(true);
+    }
+
   }
 
   if(*clust) {
 
     if(*use_mk12) *rh=0.1*pow(*mecl,0.13);
-    *rho=3*(*mecl)/(8*PI*(*rh)*(*rh)*(*rh));
 
     if(*use_mk12) sprintf(string,"%g pc (using rh=0.1xMecl^0.13 from Marks & Kroupa 2012)",*rh);
     else sprintf(string,"%g pc",*rh);
 
-    fprintf(stdout,"Task: Synthesize Cluster Population\n");
+    fprintf(stdout,"Task: Synthesize Star Cluster Population\n");
     fprintf(stdout,"Your input:\n");
     fprintf(stdout,"\tLibrary: %s\n",libname);
-    fprintf(stdout,"\tMecl = %g Msun\n",*mecl);
-    fprintf(stdout,"\trh = %s\n",string);
-    fprintf(stdout,"\t--> rho = %g Msun / pc^3\n",*rho);
+    if(*rho == STD_RHO) {
+        *rho=3*(*mecl)/(8*PI*(*rh)*(*rh)*(*rh)); /* calculate density from mecl and rh */
+        fprintf(stdout,"\tMecl = %g Msun\n",*mecl);
+        fprintf(stdout,"\trh = %s\n",string);
+        fprintf(stdout,"\t--> rho = %g Msun / pc^3 (calculated from embedded cluster mass and radius)\n",*rho);
+    } else {
+        fprintf(stdout,"\trho = %g Msun / pc^3 (mecl and rh not set; rho set by user)\n",*rho);
+    }
     fprintf(stdout,"\tEvolve cluster for %.1lf Myr\n",*t);
     fprintf(stdout,"Requested output:\n");
     fprintf(stdout,"\t%s",(*init)?"Initial OPDs are ON.\n":"Initial OPDs are OFF.\n");
-    fprintf(stdout,"\tThe ");
-    for(i=0;i<NBDF;i++)
-      if(bdf[NBDF-i-1]) fprintf(stdout,"%s- ",bdf_names[NBDF-1-i]);
-    fprintf(stdout,"OPD(s) is/are output for ");
-    for(i=0;i<9;i++)
-      if(SpT[8-i]) fprintf(stdout,"%s- ",spectral_names[8-i]);
-    fprintf(stdout,"type binaries.\n");
-    fprintf(stdout,"\tOutput scaled to %i targets searched for companions.\n",*num_sys_obs);
+    if(*fin) {
+        fprintf(stdout,"\tThe ");
+        for(i=0;i<NBDF;i++)
+          if(bdf[NBDF-i-1]) fprintf(stdout,"%s- ",bdf_names[NBDF-1-i]);
+        fprintf(stdout,"OPD(s) is/are output for ");
+        for(i=0;i<9;i++)
+          if(SpT[8-i]) fprintf(stdout,"%s- ",spectral_names[8-i]);
+        fprintf(stdout,"type binaries.\n");
+        fprintf(stdout,"\tOutput scaled to %i targets searched for companions (3rd column in output file).\n",*num_sys_obs);
+    } else {
+        fprintf(stdout,"\tNo output for final distributions requested.\n");
+    }
     if(*slidebinfrac) fprintf(stdout,"Output binary fraction as a continous function of primary mass.\n");
     if(SpT[8]) fprintf(stdout,"\tUser-defined mass range: %.2lf-%.2lf Msun\n",*mmin,*mmax);
     fprintf(stdout,"Constraints:");
     j = 0;
     for(i=0;i<NBDF;i++) {
       if(constrain[i]) {
-	fprintf(stdout,"\n\t%s in range [%g:%g] and %i bins",bdf_names[i],bin_min[i],bin_max[i],smplpnts[i]);
-	j++;
+	    fprintf(stdout,"\n\t%s in range [%g:%g] and %i bins",bdf_names[i],bin_min[i],bin_max[i],smplpnts[i]);
+	    j++;
       }
     }
     if(j == 0) fprintf(stdout,"\n\tNone.");
     fprintf(stdout,"\n--------------------\n");
+
+    /* NOTES OF CAUTION */
+    if(*mecl>1e6) {
+        fprintf(stdout,"CAUTION! YOU'RE LOOKING AT A STAR CLUSTER WITH INITIAL MASS EXCEEDING 1e+06 MSUN (YOUR CHOICE: MECL=%g MSUN)\n",*mecl);
+        fprintf(stdout,"NOTE THAT FOR CLUSTERS THIS MASSIVE A TOP-HEAVY IMF MIGHT OCCUR WHICH IS NOT INCLUDED IN THE PRESENT VERSION OF BIPOS.\n");
+        fprintf(stdout,"TAKE CARE WHEN INTERPRETING THE RESULTS OBTAINED USING BIPOS.\n");
+        fprintf(stdout,"--------------------\n");
+    }
+    if(*rho>3e6) {
+        fprintf(stdout,"CAUTION! YOU'RE LOOKING AT A STAR CLUSTER WITH INITIAL DENSITY EXCEEDING 3e+06 MSUN PC^-3 (RHO=%g MSUN PC^-3)\n",*rho);
+        fprintf(stdout,"THIS IS BEYOND THE MAXIMUM DENSITY OF THE NBODY COMPUTATIONS BIPOS HAS BEEN GAUGED WITH.\n");
+        fprintf(stdout,"TAKE CARE WHEN INTERPRETING THE RESULTS OBTAINED USING BIPOS.\n");
+        fprintf(stdout,"--------------------\n");
+    }
+
     fflush(stdout);
 
   }
@@ -333,7 +363,7 @@ bool check_user_input(int argc,char *argv[],char *libname,long int *Nlib,double 
 
     sprintf(string,"%g pc",*rh);
 
-    fprintf(stdout,"Task: Synthesize Field Population\n");
+    fprintf(stdout,"Task: Synthesize Galactic Field Population\n");
     fprintf(stdout,"Your input:\n");
     fprintf(stdout,"\tLibrary: %s\n",libname);
     fprintf(stdout,"\tECMF slope beta = %g\n",*beta);
@@ -343,14 +373,18 @@ bool check_user_input(int argc,char *argv[],char *libname,long int *Nlib,double 
     fprintf(stdout,"Requested output:\n");
     fprintf(stdout,"\t%s",(*init)?"Initial OPDs are ON.\n":"Initial OPDs are OFF.\n");
     fprintf(stdout,"\t%s",(*fin)?"Field OPDs are ON.\n":"Field OPDs are OFF.\n");
-    fprintf(stdout,"\tThe ");
-    for(i=0;i<NBDF;i++)
-      if(bdf[NBDF-1-i]) fprintf(stdout,"%s- ",bdf_names[NBDF-1-i]);
-    fprintf(stdout,"OPD(s) is/are computed for ");
-    for(i=0;i<9;i++)
-      if(SpT[8-i]) fprintf(stdout,"%s- ",spectral_names[8-i]);
-    fprintf(stdout,"type binaries.\n");
-    fprintf(stdout,"\tOutput scaled to %i targets searched for companions.\n",*num_sys_obs);
+    if(*fin) {
+        fprintf(stdout,"\tThe ");
+        for(i=0;i<NBDF;i++)
+          if(bdf[NBDF-1-i]) fprintf(stdout,"%s- ",bdf_names[NBDF-1-i]);
+        fprintf(stdout,"OPD(s) is/are computed for ");
+        for(i=0;i<9;i++)
+          if(SpT[8-i]) fprintf(stdout,"%s- ",spectral_names[8-i]);
+        fprintf(stdout,"type binaries.\n");
+        fprintf(stdout,"\tOutput scaled to %i targets searched for companions.\n",*num_sys_obs);
+    } else {
+        fprintf(stdout,"\tNo output for final distributions requested.\n");
+    }
     if(*slidebinfrac) fprintf(stdout,"Output binary fraction as a continous function of primary mass.\n");
     if(SpT[8]) fprintf(stdout,"\tUser-defined mass range: %.2lf-%.2lf Msun\n",*mmin,*mmax);
     fprintf(stdout,"Constraints:");
@@ -363,9 +397,57 @@ bool check_user_input(int argc,char *argv[],char *libname,long int *Nlib,double 
     }
     if(j == 0) fprintf(stdout,"\n\tNone.");
     fprintf(stdout,"\n--------------------\n");
+
+    /* NOTES OF CAUTION */
+    if(meclmax>1e6) {
+        fprintf(stdout,"CAUTION! YOUR STAR CLUSTER POPULATION CONTAINS CLUSTERS WITH INITIAL MASS EXCEEDING 1e+06 MSUN (SFR=%g -> MECLMAX=%g MSUN)\n",*sfr,meclmax);
+        fprintf(stdout,"NOTE THAT FOR CLUSTERS THIS MASSIVE A TOP-HEAVY IMF MIGHT OCCUR WHICH IS NOT INCLUDED IN THE PRESENT VERSION OF BIPOS.\n");
+        fprintf(stdout,"PROBABLY A NEGLIGIBLE EFFECT IF SUCH CLUSTERS ARE NOT THE DOMINANT DONATORS TO THE FIELD POPULATION.\n");
+        fprintf(stdout,"TAKE CARE NEVERTHELESS WHEN INTERPRETING THE RESULTS OBTAINED USING BIPOS.\n");
+        fprintf(stdout,"--------------------\n");
+    }
+    if( !(*use_mk12) && 3*meclmax/(8*PI*(*rh)*(*rh)*(*rh))>3e6 ) {
+        fprintf(stdout,"CAUTION! YOUR STAR CLUSTER POPULATION CONTAINS CLUSTERS WITH INITIAL DENSITIES EXCEEDING 3e+06 MSUN PC^-3.\n");
+        fprintf(stdout,"THIS IS BEYOND THE MAXIMUM DENSITY OF THE NBODY COMPUTATIONS BIPOS HAS BEEN GAUGED WITH.\n");
+        fprintf(stdout,"TAKE CARE WHEN INTERPRETING THE RESULTS OBTAINED USING BIPOS.\n");
+        fprintf(stdout,"--------------------\n");
+    } else if(*use_mk12) {
+        m = *meclmin;
+        do {
+            r = 0.1*pow(m,0.13);
+            if( 3*m/(8*PI*pow(r,3)) > 3e6) {
+                fprintf(stdout,"CAUTION! YOUR STAR CLUSTER POPULATION CONTAINS CLUSTERS WITH INITIAL DENSITIES EXCEEDING 3e+06 MSUN PC^-3.\n");
+                fprintf(stdout,"THIS IS BEYOND THE MAXIMUM DENSITY OF THE NBODY COMPUTATIONS BIPOS HAS BEEN GAUGED WITH.\n");
+                fprintf(stdout,"TAKE CARE WHEN INTERPRETING THE RESULTS OBTAINED USING BIPOS.\n");
+                fprintf(stdout,"--------------------\n");
+                break;
+            }
+            m+=10.;
+        } while(m<=meclmax);
+    }
+
     fflush(stdout);
 
   }
+
+    /* NOTES OF CAUTION */
+    if(*fin && (*clust || *field)) {
+       if( SpT[0] || SpT[7] || (SpT[8] && *mmin<0.2) ) {
+            fprintf(stdout,"CAUTION! YOUR OUTPUT INCLUDES PRIMARIES WITH MASSES <0.2 MSUN.\n");
+            fprintf(stdout,"NOTE THAT A CONTRIBUTION OF 'STAR-LIKE BDs' AND 'BD-LIKE STARS' IS POSSIBLE\n");
+            fprintf(stdout,"(CF. MARKS ET AL. 2015). THESE ARE NOT INCLUDED IN THE PRESENT VERSION OF BIPOS.\n");
+            fprintf(stdout,"TAKE CARE WHEN INTERPRETING THE RESULTS OBTAINED USING BIPOS.\n");
+            fprintf(stdout,"--------------------\n");
+        }
+       if( SpT[3] || SpT[4] || SpT[5] || SpT[6] || SpT[7] || (SpT[8] && *mmax>1.4) ) {
+            fprintf(stdout,"CAUTION! YOUR OUTPUT INCLUDES PRIMARIES WITH MASSES >1.4 MSUN.'\n");
+            fprintf(stdout,"NOTE THAT THE KROUPA (1995) BIRTH/INITIAL BINARY POPULATIONS WHERE FOUND FOR LATE-TYPE STARS\n");
+            fprintf(stdout,"(~GKM STARS). DIFFERENT INITIAL DISTRIBUTIONS ARE POSSIBLE FOR EARLIER SPECTRAL TYPES.\n");
+            fprintf(stdout,"TAKE CARE WHEN INTERPRETING THE RESULTS OBTAINED USING BIPOS.\n");
+            fprintf(stdout,"--------------------\n");
+        }
+        fflush(stdout);
+    }
 
   return(false);
 
@@ -411,7 +493,7 @@ void show_help(bool lib,bool clust,bool field,bool slidebinfrac,bool init,bool f
 
   if(clust) {
 
-    fprintf(stdout,"Synthesizing a star cluster population\n");
+    fprintf(stdout,"Synthesizing a Star Cluster’s Binary Population\n");
     fprintf(stdout,"--------------------\n");
     fprintf(stdout,"In order to synthesize the binary population of a star cluster use the following Syntax:\n\n");
     fprintf(stdout,"./BiPoS clust [OPD=EPLaqemtihs] [SpT=OBAFGKMc] [+init] [-evolve] [mecl=x rh=x] [constrain=x,min,max,bin] [libname=x] [t=1|3|5]\n\n");
@@ -422,13 +504,15 @@ void show_help(bool lib,bool clust,bool field,bool slidebinfrac,bool init,bool f
     fprintf(stdout,"\t\t\t(s-apparent separation,t-orbital time,f-orbital phase)\n");
     fprintf(stdout,"\tSpT=OBAFGKMcu\tspecify for which spectral types the OPDs are to be computed. (STD=c)\n");
     fprintf(stdout,"\t\t\t(OBAFGKM-according to Havard sequence,c-all masses,u-user defined mass-range)\n");
-    fprintf(stdout,"\tmmin=x\t\tdefines minimum mass if SpT=u is set. (STD=%g)\n",STD_MMIN);
-    fprintf(stdout,"\tmmax=x\t\tdefines maximum mass if SpT=u is set. (STD=%g)\n",STD_MMAX);
+    fprintf(stdout,"\tmmin=x\t\tdefines minimum primary star mass if SpT=u is set. (STD=%g)\n",STD_MMIN);
+    fprintf(stdout,"\tmmax=x\t\tdefines maximum primary star mass if SpT=u is set. (STD=%g)\n",STD_MMAX);
     fprintf(stdout,"\t+init\t\toutput initial OPDs (STD=%s)\n",init?("ON"):("OFF"));
     fprintf(stdout,"\t-evolve\t\tDON'T output evolved OPDs (STD=%s)\n",fin?("ON"):("OFF"));
-    fprintf(stdout,"\t+fbspt\t\toutput binary fraction as a continous function of SpT (STD=%s)\n",slidebinfrac?("ON"):("OFF"));
-    fprintf(stdout,"\tmecl=x\t\treplace x with the star cluster mass in Msun (STD=%g)\n",STD_MECL);;
-    fprintf(stdout,"\trh=x\t\treplace x with the half-mass radius in pc\n\t\t\tOR set rh=0 to use rh=0.1xMecl^0.13 from Marks & Kroupa 2012 (STD)\n");
+    fprintf(stdout,"\t+fbspt\t\toutput binary fraction as a continuous function of SpT (STD=%s)\n",slidebinfrac?("ON"):("OFF"));
+    fprintf(stdout,"\tmecl=x\t\treplace x with the star cluster mass in Msun (STD=%g)\n",STD_MECL);
+    fprintf(stdout,"\trh=x\t\treplace x with the half-mass radius in pc\n\t\t\tOR set rh=0 to use rh=0.1xMecl^0.13 from Marks & Kroupa 2012 (STD=0)\n");
+    fprintf(stdout,"\trho=x\t\treplace x with the initial density within the half-mass radius of the embedded cluster in Msun pc^-3 (STD=%g)\n",STD_RHO);
+    fprintf(stdout,"\t\t\t(calculated from mecl and rh instead, if not set; rho alone determines resulting binary population)\n");
     fprintf(stdout,"\tlibname=x\treplace x with filename of library in folder Lib/ (STD=%s)\n",STD_LIBNAME);
     fprintf(stdout,"\tt=1|3|5\t\tspecify the time-span for binary evolution in Myr (1,3 and 5 only, STD=%i)\n",STD_TIME);
     fprintf(stdout,"\tscale=x\t\treplace x with number of targets in survey searched for companions (STD=%i)\n",STD_TARGETS);
@@ -438,21 +522,18 @@ void show_help(bool lib,bool clust,bool field,bool slidebinfrac,bool init,bool f
     fprintf(stdout,"Use 'constrain=...' repeatedly to place constraints on more than one parameter simultaneously. See examples below.\n");
     fprintf(stdout,"--------------------\n");
     fprintf(stdout,"Examples (distinguish upper- and lower-case characters!):\n");
-    fprintf(stdout,"- Synthesize the period- and mass-ratio-OPD for G- and M-type binaries:\n");
+    fprintf(stdout,"- Synthesize the period- and mass-ratio-OPD for G- and M-type binaries with embedded cluster mass 1000Msun and half-mass radius 0.5pc\n  (note that only the initial density of the embedded cluster as calculated from mass and radius is relevant for the outcome):\n");
     fprintf(stdout,"  ./BiPoS clust OPD=Pq SpT=GM mecl=1000 rh=0.5\n");
-    fprintf(stdout,"- Synthesize the semi-major-axis-, mass-ratio- and eccentrity-OPD for F-,K-type and all binaries:\n");
-    fprintf(stdout,"  ./BiPoS clust OPD=aqe SpT=FKc mecl=300 rh=0.2\n");
-    fprintf(stdout,"- Synthesize the initial energy-OPD for G-type and all binaries from Library 'Lib/MyLib.dat',\n  but not the evolved population, and use standard values for Mecl and rh:\n");
-    fprintf(stdout,"  ./BiPoS field OPD=E SpT=Gc +init -evolve libname=MyLib.dat\n");
+    fprintf(stdout,"- Synthesize the semi-major-axis-, mass-ratio- and eccentrity-OPD for F-,K-type and all binaries for a cluster of density 500 Msun pc^-3:\n");
+    fprintf(stdout,"  ./BiPoS clust OPD=aqe SpT=FKc rho=500\n");
+    fprintf(stdout,"- Synthesize the initial energy-OPD, distribute in 10 bins for log(E) in [0:2] for G-type and all binaries from Library 'Lib/MyLib.dat',\n  but not the evolved population, and use standard values for Mecl and rh to calculate the density rho, output binaries with mass-ratios q in [0.6:0.9] only:\n");
+    fprintf(stdout,"  ./BiPoS field OPD=E SpT=Gc +init -evolve constrain=E,0,2,10 constrain=q,0.6,0.9,3 libname=MyLib.dat\n");
 
   }
 
   if(field) {
 
-    fprintf(stdout,"--------------------\n");
-    fprintf(stdout,"BiPoS - The Binary Population Synthesizer\n");
-    fprintf(stdout,"--------------------\n");
-    fprintf(stdout,"Synthesizing galactic field populations\n");
+    fprintf(stdout,"Synthesizing a Galaxy’s Field Binary Population\n");
     fprintf(stdout,"--------------------\n");
     fprintf(stdout,"In order to synthesize the binary population of a galactic field use the following Syntax:\n\n");
     fprintf(stdout,"./BiPoS field [OPD=EPLaqem] [SpT=OBAFGKMc] [+init] [-field] [beta=x sfr=x meclmin=x rh=x] [constrain=x,min,max,bin] [libname=x]\n\n");
@@ -463,12 +544,12 @@ void show_help(bool lib,bool clust,bool field,bool slidebinfrac,bool init,bool f
     fprintf(stdout,"\t\t\t(s-apparent separation,t-orbital time,f-orbital phase)\n");
     fprintf(stdout,"\tSpT=OBAFGKMcu\tspecify for which spectral types the OPDs are to be computed. (STD=c)\n");
     fprintf(stdout,"\t\t\t(OBAFGKM-according to Havard sequence,c-all masses,u-user defined mass-range)\n");
-    fprintf(stdout,"\tmmin=x\t\tdefines minimum mass if SpT=u is set. (STD=%g)\n",STD_MMIN);
-    fprintf(stdout,"\tmmax=x\t\tdefines maximum mass if SpT=u is set. (STD=%g)\n",STD_MMAX);
+    fprintf(stdout,"\tmmin=x\t\tdefines minimum primary star mass if SpT=u is set. (STD=%g)\n",STD_MMIN);
+    fprintf(stdout,"\tmmax=x\t\tdefines maximum primary star mass if SpT=u is set. (STD=%g)\n",STD_MMAX);
     fprintf(stdout,"\t+init\t\toutput initial OPDs (STD=%s)\n",init?("ON"):("OFF"));
     fprintf(stdout,"\t-field\t\tDON'T output field OPDs (STD=%s)\n",fin?("ON"):("OFF"));
-    fprintf(stdout,"\t+fbspt\t\toutput binary fraction as a continous function of SpT (STD=%s)\n",slidebinfrac?("ON"):("OFF"));
-    fprintf(stdout,"\tbeta=x\t\treplace x with the index (negative slope) of the embedded cluster mass-function (ECMF, STD=%g)\n",STD_BETA);
+    fprintf(stdout,"\t+fbspt\t\toutput binary fraction as a continuous function of SpT (STD=%s)\n",slidebinfrac?("ON"):("OFF"));
+    fprintf(stdout,"\tbeta=x\t\treplace x with the index (negative slope) of the embedded cluster mass-function (ECMF, M^-beta, STD=%g)\n",STD_BETA);
     fprintf(stdout,"\tsfr=x\t\treplace x with the star formation rate in Msun yr^-1 (STD=%g)\n",STD_SFR);
     fprintf(stdout,"\tmeclmin=x\treplace x with the minimum cluster mass in Msun (STD=%g)\n",STD_MECLMIN);
     fprintf(stdout,"\trh=x\t\treplace x with the typical cluster half-mass radius in pc\n\t\t\tOR set rh=0 to use rh=0.1xMecl^0.13 from Marks & Kroupa 2012 (STD)\n");
@@ -480,11 +561,11 @@ void show_help(bool lib,bool clust,bool field,bool slidebinfrac,bool init,bool f
     fprintf(stdout,"Use 'constrain=...' repeatedly to place constraints on more than one parameter simultaneously. See examples below.\n");
     fprintf(stdout,"--------------------\n");
     fprintf(stdout,"Examples (distinguish upper- and lower-case characters!):\n");
-    fprintf(stdout,"- Synthesize field period- and mass-ratio-OPD for G- and M-type binaries:\n");
+    fprintf(stdout,"- Synthesize field period- and mass-ratio-OPD for G- and M-type binaries;\n  choose ECMF index 2.0, SFR of 0.01 Msun yr^-1, minimum star cluster mass of 1 Msun and typical half-mass radius of 0.5 pc:\n");
     fprintf(stdout,"  ./BiPoS field OPD=Pq SpT=GM beta=2.0 sfr=0.01 meclmin=1.0 rh=0.5\n");
-    fprintf(stdout,"- Synthesize field semi-major-axis-, mass-ratio- and eccentrity-OPD for F-,K-type and all binaries:\n");
+    fprintf(stdout,"- Synthesize field semi-major-axis-, mass-ratio- and eccentrity-OPD for F-,K-type and all binaries;\n  choose ECMF index 2.4, SFR of 10 Msun yr^-1, minimum star cluster mass of 5 Msun and typical half-mass radius of 0.2 pc:\n");
     fprintf(stdout,"  ./BiPoS field OPD=aqe SpT=FKc beta=2.4 sfr=10.0 meclmin=5.0 rh=0.2\n");
-    fprintf(stdout,"- Synthesize initial energy-OPD for G-type and all binaries from Library 'Lib/MyLib.dat',\n  but not for the field and use standard values for beta, sfr, meclmin and rh:\n");
+    fprintf(stdout,"- Synthesize initial energy-OPD for G-type and all binaries from Library 'Lib/MyLib.dat',\n  but not for the field, and use standard values for beta, sfr, meclmin and rh:\n");
     fprintf(stdout,"  ./BiPoS field OPD=E SpT=Gc +init -field libname=MyLib.dat\n");
     fprintf(stdout,"- Synthesize initial and final field OPD for apparent separations and mass-ratios for A-type stars from Library 'Lib/MyLib.dat';\n  binaries with mass-ratios between 0.15 and 1.0 only; distribute mass-ratios into four equal-size bins;\n  use standard values for beta, sfr, meclmin and rh:\n");
     fprintf(stdout,"  ./BiPoS field OPD=sq SpT=A +init libname=MyLib.dat constrain=q,0.15,1.0,4\n");
@@ -501,7 +582,7 @@ void show_help(bool lib,bool clust,bool field,bool slidebinfrac,bool init,bool f
     fprintf(stdout,"m/Msun | %.1lf- %.1lf | %.1lf-%.1lf | %.1lf-%.1lf | %.1lf-%.1lf | %.1lf-%.1lf | %.1lf-%.1lf | %.2lf-%.1lf\n",
 	    LOWMASS_O,MHIGH,LOWMASS_B,LOWMASS_O,LOWMASS_A,LOWMASS_B,LOWMASS_F,LOWMASS_A,LOWMASS_G,LOWMASS_F,LOWMASS_K,LOWMASS_G,LOWMASS_M,LOWMASS_K);
     fprintf(stdout,"--------------------\n");
-    fprintf(stdout,"These values can be modified in 'Settings.h'; requires re-compilation via 'make clean' and 'make'.\nA user-defined mass range can be defined via the command-line.\n");
+    fprintf(stdout,"These values can be modified in 'Settings.h'; requires re-compilation via 'make clean' and 'make'.\nUsually not necessary since a user-defined mass range can be defined via the command-line during runtime.\n");
 
   }
 
@@ -518,6 +599,7 @@ void set_std_values(long int *Nlib,char *libname,double *mmin,double *mmax,bool 
 
   *num_sys_obs = STD_TARGETS;
   *mecl = STD_MECL;
+  *rho = STD_RHO;
   *t = STD_TIME;
 
   *beta = STD_BETA;

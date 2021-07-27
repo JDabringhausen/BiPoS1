@@ -23,8 +23,9 @@ int main(int argc,char *argv[]) {
   FILE *dat;
 
   fprintf(stdout,"\n--------------------\n");
-  fprintf(stdout,"BiPoS - The Binary Population Synthesizer\n");
+  fprintf(stdout,"BiPoS1 - The Binary Population Synthesizer, version 1\n");
   fprintf(stdout,"by M. Marks @AIfA Bonn, Germany\n");
+  fprintf(stdout,"Contact: astro.michi@yahoo.com or joerg@sirrah.troja.mff.cuni.cz\n");
   fprintf(stdout,"--------------------\n");
 
   for(i=0;i<n_SpT;i++)
